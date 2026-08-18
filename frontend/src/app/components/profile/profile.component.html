@@ -1,0 +1,86 @@
+<div class="profile-wrapper" *ngIf="currentUser">
+  <div class="profile-card">
+    <div class="profile-header">
+      <div class="profile-avatar-container">
+        <!-- Interactive Clickable Avatar Wrapper -->
+        <div class="avatar-clickable-wrapper position-relative" (click)="triggerFileInput()" title="Change Profile Picture">
+          <img [src]="authService.getAvatarUrl(currentUser.avatar_url)" class="profile-avatar-img" alt="Avatar" />
+          <div class="avatar-hover-overlay d-flex flex-column align-items-center justify-content-center">
+            <span class="material-icons overlay-icon text-white" style="font-size: 18px;">photo_camera</span>
+            <span class="overlay-text text-white" style="font-size: 10px; font-weight: 600; margin-top: 2px;">Change</span>
+          </div>
+        </div>
+        
+        <!-- Hidden Native File Picker -->
+        <input type="file" accept="image/png, image/jpeg, image/jpg, image/webp" class="d-none" (change)="onFileSelected($event)" #fileInput />
+        
+        <!-- Self-Service Action Controls -->
+        <div class="avatar-controls mt-2 d-flex gap-2 justify-content-center">
+          <button type="button" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" (click)="triggerFileInput()" [disabled]="uploading" style="height: 28px; font-size: 11px; padding: 0 8px;">
+            <span class="material-icons" style="font-size: 14px; vertical-align: middle;">photo_camera</span> Change
+          </button>
+          <button *ngIf="currentUser.avatar_url" type="button" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1" (click)="removeAvatar()" [disabled]="uploading" style="height: 28px; font-size: 11px; padding: 0 8px;">
+            <span class="material-icons" style="font-size: 14px; vertical-align: middle;">delete</span> Reset
+          </button>
+        </div>
+
+        <!-- Inline Loading Indicator -->
+        <div *ngIf="uploading" class="text-center mt-2">
+          <div class="spinner-border spinner-border-sm text-primary" role="status" style="width: 14px; height: 14px;">
+            <span class="visually-hidden">Uploading...</span>
+          </div>
+        </div>
+        
+        <!-- Inline Error Messages -->
+        <div *ngIf="avatarError" class="text-danger mt-1 text-center" style="font-size: 11px; font-weight: 600; max-width: 180px; word-break: break-word; line-height: 1.25;">
+          {{ avatarError }}
+        </div>
+      </div>
+      <div>
+        <h2 class="profile-name">{{ currentUser.full_name }}</h2>
+        <span class="profile-role-badge">{{ currentUser.role }}</span>
+      </div>
+    </div>
+
+    <div class="profile-grid">
+      <div class="profile-info-group">
+        <div class="info-label uppercase">Username</div>
+        <div class="info-value">{{ currentUser.username }}</div>
+      </div>
+      
+      <div class="profile-info-group">
+        <div class="info-label uppercase">System Role</div>
+        <div class="info-value">{{ currentUser.role }}</div>
+      </div>
+
+      <div class="profile-info-group">
+        <div class="info-label uppercase">Email Address</div>
+        <div class="info-value">{{ currentUser.email }}</div>
+      </div>
+
+      <div class="profile-info-group">
+        <div class="info-label uppercase">Account Status</div>
+        <div class="info-value">
+          <span class="status-badge status-active" *ngIf="currentUser.is_active">Active</span>
+          <span class="status-badge status-inactive" *ngIf="!currentUser.is_active">Inactive</span>
+        </div>
+      </div>
+
+      <div class="profile-info-group" *ngIf="currentUser.vendor_id" style="grid-column: span 2;">
+        <div class="info-label uppercase">Associated Supplier Profile ID</div>
+        <div class="info-value">
+          <a [routerLink]="['/vendors', currentUser.vendor_id]" class="fw-bold text-decoration-none">
+            Profile ID: {{ currentUser.vendor_id }}
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-footer">
+      <button class="btn btn-outline-danger btn-signout" (click)="logout()">
+        <span class="material-icons" style="font-size: 18px;">logout</span>
+        Sign Out
+      </button>
+    </div>
+  </div>
+</div>

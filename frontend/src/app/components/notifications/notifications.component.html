@@ -1,0 +1,59 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Notifications</h1>
+      <p class="page-subtitle">Acknowledge process updates, contract expiry alerts, risk status shifts, and message receipts.</p>
+    </div>
+    <div *ngIf="notifications.length > 0">
+      <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" (click)="markAllRead()">
+        <span class="material-icons fs-6">done_all</span> Mark All as Read
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center my-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading alerts...</span>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && notifications.length === 0" class="card p-5 text-center border-light shadow-sm">
+    <span class="material-icons text-muted fs-1 mb-3">notifications_none</span>
+    <h3>Your inbox is empty</h3>
+    <p class="text-muted">You have no active alerts or system notifications.</p>
+  </div>
+
+  <!-- Notification Listing -->
+  <div class="notifications-list" *ngIf="!loading && notifications.length > 0">
+    <div 
+      class="notif-card card p-3 mb-3 border shadow-sm position-relative d-flex flex-row align-items-start gap-3" 
+      *ngFor="let n of notifications"
+      [class.unread-bg]="!n.is_read"
+    >
+      <div class="notif-icon-box p-2 rounded-circle" [ngClass]="n.type.toLowerCase().replace(' ', '-')">
+        <span class="material-icons text-white fs-5" *ngIf="n.type === 'Procurement'">shopping_cart</span>
+        <span class="material-icons text-white fs-5" *ngIf="n.type === 'Delivery'">local_shipping</span>
+        <span class="material-icons text-white fs-5" *ngIf="n.type === 'Vendor Approval'">business</span>
+        <span class="material-icons text-white fs-5" *ngIf="n.type === 'Contract Expiry'">gavel</span>
+        <span class="material-icons text-white fs-5" *ngIf="n.type === 'Compliance'">report_problem</span>
+        <span class="material-icons text-white fs-5" *ngIf="n.type === 'Communication'">forum</span>
+      </div>
+
+      <div class="flex-grow-1">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <h4 class="notif-title mb-0" [class.fw-bold]="!n.is_read">{{ n.title }}</h4>
+          <span class="text-muted fs-6">{{ n.created_at | date:'yyyy-MM-dd HH:mm' }}</span>
+        </div>
+        <p class="mb-0 text-muted">{{ n.message }}</p>
+      </div>
+
+      <div class="align-self-center" *ngIf="!n.is_read">
+        <button class="btn btn-sm btn-outline-secondary py-1 px-2 d-flex align-items-center" (click)="markRead(n.id)">
+          <span class="material-icons fs-6">check</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

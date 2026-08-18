@@ -1,0 +1,193 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Procurement Intelligence Dashboard</h1>
+      <p class="page-subtitle">Real-time overview of supplier reliability, purchasing workflows, and compliance risks.</p>
+    </div>
+  </div>
+
+  <!-- KPI Loading State -->
+  <div *ngIf="loadingKPIs" class="d-flex justify-content-center my-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading dashboard...</span>
+    </div>
+  </div>
+
+  <!-- KPI Cards Grid -->
+  <div *ngIf="!loadingKPIs" class="kpi-grid">
+    <!-- Card 1 -->
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">business</span>
+      <div class="kpi-title">Total Vendors</div>
+      <div class="kpi-value">{{ kpis.total_vendors }}</div>
+      <div class="kpi-trend">
+        <span class="badge-status active">Active: {{ kpis.active_vendors }}</span>
+      </div>
+    </div>
+    <!-- Card 2 -->
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">pending_actions</span>
+      <div class="kpi-title">Pending Approvals</div>
+      <div class="kpi-value">{{ kpis.pending_approvals }}</div>
+      <div class="kpi-trend">
+        <span class="badge-status pending" *ngIf="kpis.pending_approvals > 0">Needs Review</span>
+        <span class="text-muted" *ngIf="kpis.pending_approvals === 0">Fully Processed</span>
+      </div>
+    </div>
+    <!-- Card 3 -->
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">receipt_long</span>
+      <div class="kpi-title">Active POs</div>
+      <div class="kpi-value">{{ kpis.active_pos }}</div>
+      <div class="kpi-trend text-muted">
+        Ordered or Out for Delivery
+      </div>
+    </div>
+    <!-- Card 4 -->
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">monetization_on</span>
+      <div class="kpi-title">Procurement Value</div>
+      <div class="kpi-value">${{ kpis.procurement_value | number:'1.2-2' }}</div>
+      <div class="kpi-trend text-muted">
+        Total cumulative spend
+      </div>
+    </div>
+    <!-- Card 5 -->
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">speed</span>
+      <div class="kpi-title">Avg Reliability</div>
+      <div class="kpi-value">{{ kpis.average_reliability }}%</div>
+      <div class="kpi-trend">
+        <span class="badge-status active" *ngIf="kpis.average_reliability >= 80">Excellent</span>
+        <span class="badge-status pending" *ngIf="kpis.average_reliability >= 60 && kpis.average_reliability < 80">Moderate</span>
+        <span class="badge-status rejected" *ngIf="kpis.average_reliability < 60">Critical</span>
+      </div>
+    </div>
+    <!-- Card 6 -->
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">report_problem</span>
+      <div class="kpi-title">High Risk Vendors</div>
+      <div class="kpi-value text-danger" [class.text-dark]="kpis.high_risk_vendors === 0">{{ kpis.high_risk_vendors }}</div>
+      <div class="kpi-trend">
+        <span class="badge-status rejected" *ngIf="kpis.high_risk_vendors > 0">Action Required</span>
+        <span class="badge-status active" *ngIf="kpis.high_risk_vendors === 0">0 High Risk Profiles</span>
+      </div>
+    </div>
+    <!-- Card 7 -->
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">gavel</span>
+      <div class="kpi-title">Expiring Contracts</div>
+      <div class="kpi-value" [class.text-warning]="kpis.expiring_contracts > 0">{{ kpis.expiring_contracts }}</div>
+      <div class="kpi-trend">
+        <span class="badge-status pending" *ngIf="kpis.expiring_contracts > 0">Expires &lt; 30 Days</span>
+        <span class="text-muted" *ngIf="kpis.expiring_contracts === 0">No urgent expirations</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Loading State -->
+  <div *ngIf="loadingCharts" class="d-flex justify-content-center my-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading dashboard data...</span>
+    </div>
+  </div>
+
+  <!-- Charts Layout Grid -->
+  <div *ngIf="!loadingCharts" class="row g-3">
+    <!-- Procurement Spend Trend -->
+    <div class="col-lg-8">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h2 class="chart-title">Procurement Spend Trend</h2>
+          <p class="chart-subtitle">Monthly purchase order aggregate values ({{ chartsData.spending_by_month.length }} Months)</p>
+        </div>
+        <div class="chart-body">
+          <canvas #spendingCanvas></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vendor Reliability Overview -->
+    <div class="col-lg-4">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h2 class="chart-title">Vendor Reliability Overview</h2>
+          <p class="chart-subtitle">Active suppliers grouped by risk threat portfolio</p>
+        </div>
+        <div class="chart-body text-center">
+          <canvas #reliabilityCanvas></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Risk & Actions -->
+    <div class="col-lg-6">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h2 class="chart-title">Risk & Actions</h2>
+          <p class="chart-subtitle">Critical supplier assessments and pending approval workflows</p>
+        </div>
+        <div class="chart-list-body">
+          <div *ngIf="riskActions.length === 0" class="empty-list-state text-center py-4">
+            <span class="material-icons empty-icon text-success fs-1">check_circle</span>
+            <div class="empty-text mt-2 text-muted">No active risk items found. All systems compliant.</div>
+          </div>
+          <div *ngIf="riskActions.length > 0" class="list-container">
+            <a class="list-item clickable-item text-decoration-none" *ngFor="let item of riskActions" [routerLink]="getRiskRoute(item)">
+              <div class="item-icon-wrapper">
+                <span class="material-icons text-danger" *ngIf="item.type === 'high_risk_vendor'">report_problem</span>
+                <span class="material-icons text-warning" *ngIf="item.type === 'pending_approval'">pending_actions</span>
+                <span class="material-icons text-info" *ngIf="item.type === 'expiring_contract'">gavel</span>
+              </div>
+              <div class="item-details flex-grow-1">
+                <div class="item-title font-weight-bold">{{ item.label }}</div>
+                <div class="item-desc text-muted">{{ item.details }}</div>
+              </div>
+              <span class="risk-badge" [ngClass]="item.priority === 'High' ? 'bg-danger-light' : 'bg-warning-light'">
+                {{ item.priority }}
+              </span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="col-lg-6">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h2 class="chart-title">Recent Activity</h2>
+          <p class="chart-subtitle">Latest operations and audit events logged across modules</p>
+        </div>
+        <div class="chart-list-body">
+          <div *ngIf="recentActivities.length === 0" class="empty-list-state text-center py-4">
+            <span class="material-icons empty-icon text-muted fs-1">history</span>
+            <div class="empty-text mt-2 text-muted">No recent system activity logged.</div>
+          </div>
+          <div *ngIf="recentActivities.length > 0" class="list-container">
+            <div class="list-item" *ngFor="let activity of recentActivities">
+              <div class="item-icon-wrapper activity-icon">
+                <span class="material-icons text-primary" *ngIf="activity.module === 'Auth'">person</span>
+                <span class="material-icons text-success" *ngIf="activity.module === 'Vendors'">business</span>
+                <span class="material-icons text-info" *ngIf="activity.module === 'Procurement'">shopping_cart</span>
+                <span class="material-icons text-secondary" *ngIf="activity.module === 'Purchase Orders'">receipt_long</span>
+                <span class="material-icons text-warning" *ngIf="activity.module === 'Contracts'">description</span>
+                <span class="material-icons text-muted" *ngIf="!['Auth', 'Vendors', 'Procurement', 'Purchase Orders', 'Contracts'].includes(activity.module)">settings</span>
+              </div>
+              <div class="item-details flex-grow-1">
+                <div class="item-title text-dark">
+                  <span class="activity-user font-weight-bold">{{ activity.username }}</span>
+                  {{ activity.action }}
+                </div>
+                <div class="item-desc text-muted">{{ activity.details }}</div>
+              </div>
+              <span class="time-badge text-muted">
+                {{ activity.created_at | date:'shortTime' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

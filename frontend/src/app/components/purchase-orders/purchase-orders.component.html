@@ -1,0 +1,206 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Purchase Orders</h1>
+      <p class="page-subtitle">Track ordering contracts, delivery timelines, billing states, and order fulfillments.</p>
+    </div>
+    <div *ngIf="authService.hasRole(['Administrator', 'Procurement Manager', 'Supply Chain Manager'])">
+      <button class="btn btn-primary-custom d-flex align-items-center gap-2 px-3 py-2" (click)="openModal()">
+        <span class="material-icons">add</span>
+        Create Purchase Order
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card p-3 mb-4 border-light shadow-sm filters-card">
+    <div class="row g-3">
+      <div class="col-md-5">
+        <div class="input-group">
+          <span class="input-group-text bg-transparent border-end-0 text-muted"><span class="material-icons fs-5">search</span></span>
+          <input 
+            type="text" 
+            class="form-control border-start-0 ps-1" 
+            placeholder="Search by PO number or supplier name..." 
+            [(ngModel)]="searchQuery" 
+            (ngModelChange)="applyFilters()"
+          />
+        </div>
+      </div>
+      <div class="col-md-3">
+        <select class="form-select" [(ngModel)]="selectedStatus" (ngModelChange)="applyFilters()">
+          <option value="">All Statuses</option>
+          <option *ngFor="let st of statuses" [value]="st">{{ st }}</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <select class="form-select" [(ngModel)]="selectedInvoice" (ngModelChange)="applyFilters()">
+          <option value="">All Invoice States</option>
+          <option *ngFor="let inv of invoices" [value]="inv">{{ inv }}</option>
+        </select>
+      </div>
+      <div class="col-md-1 d-grid">
+        <button class="btn btn-outline-secondary" (click)="searchQuery = ''; selectedStatus = ''; selectedInvoice = ''; applyFilters()">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center my-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && filteredOrders.length === 0" class="card p-5 text-center border-light shadow-sm">
+    <span class="material-icons text-muted fs-1 mb-3">receipt_long</span>
+    <h3>No purchase orders found</h3>
+    <p class="text-muted">Adjust filters or create a new order above.</p>
+  </div>
+
+  <!-- Data Table -->
+  <div *ngIf="!loading && filteredOrders.length > 0" class="custom-table-container">
+    <table class="custom-table">
+      <thead>
+        <tr>
+          <th>PO Number</th>
+          <th>Supplier</th>
+          <th>Amount</th>
+          <th>Order Date</th>
+          <th>Expected Delivery</th>
+          <th>Actual Delivery</th>
+          <th>Invoice State</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let po of filteredOrders">
+          <td class="text-nowrap"><strong>{{ po.po_number }}</strong></td>
+          <td>{{ po.vendor.name }}</td>
+          <td class="text-nowrap"><strong>${{ po.amount | number:'1.2-2' }}</strong></td>
+          <td class="text-nowrap">{{ po.order_date | date:'yyyy-MM-dd' }}</td>
+          <td class="text-nowrap">{{ po.expected_delivery_date | date:'yyyy-MM-dd' }}</td>
+          <td class="text-nowrap">{{ po.actual_delivery_date ? (po.actual_delivery_date | date:'yyyy-MM-dd') : 'Pending' }}</td>
+          <td class="text-nowrap">
+            <ng-container *ngIf="authService.hasRole(['Administrator', 'Finance Officer', 'Procurement Manager']); else readOnlyInvoice">
+              <select class="form-select form-select-sm d-inline-block w-auto" [ngModel]="po.invoice_status" (ngModelChange)="updateInvoice(po.id, $event)">
+                <option value="Unpaid">Unpaid</option>
+                <option value="Invoiced">Invoiced</option>
+                <option value="Paid">Paid</option>
+              </select>
+            </ng-container>
+            <ng-template #readOnlyInvoice>
+              <span class="badge-status text-dark bg-light">{{ po.invoice_status }}</span>
+            </ng-template>
+          </td>
+          <td class="text-nowrap">
+            <span class="badge-status" [ngClass]="po.status.toLowerCase().replace(' ', '-')">
+              {{ po.status }}
+            </span>
+          </td>
+          <td class="text-end text-nowrap">
+            <div class="d-flex justify-content-end gap-2">
+              <!-- Approve (Pending Approval) -->
+              <button 
+                *ngIf="po.status === 'Pending Approval' && authService.hasRole(['Administrator', 'Supply Chain Manager', 'Finance Officer'])" 
+                class="btn btn-sm btn-success"
+                (click)="updateStatus(po.id, 'Approved')">
+                <span class="material-icons">check</span> Approve
+              </button>
+
+              <!-- Dispatch / Order (Approved) -->
+              <button 
+                *ngIf="po.status === 'Approved' && authService.hasRole(['Administrator', 'Supply Chain Manager', 'Procurement Manager'])" 
+                class="btn btn-sm btn-primary-custom"
+                (click)="updateStatus(po.id, 'Ordered')">
+                <span class="material-icons">local_shipping</span> Dispatch
+              </button>
+
+              <!-- Mark Delivered (Ordered) -->
+              <button 
+                *ngIf="po.status === 'Ordered'" 
+                class="btn btn-sm btn-warning"
+                (click)="updateStatus(po.id, 'Delivered')">
+                <span class="material-icons">done_all</span> Mark Delivered
+              </button>
+
+              <!-- Mark Completed (Delivered) -->
+              <button 
+                *ngIf="po.status === 'Delivered' && authService.hasRole(['Administrator', 'Procurement Manager', 'Finance Officer'])" 
+                class="btn btn-sm btn-outline-success"
+                (click)="updateStatus(po.id, 'Completed')">
+                <span class="material-icons">assignment_turned_in</span> Complete PO
+              </button>
+
+              <!-- Cancel option -->
+              <button 
+                *ngIf="(po.status === 'Pending Approval' || po.status === 'Approved') && authService.hasRole(['Administrator', 'Supply Chain Manager', 'Finance Officer'])" 
+                class="btn btn-sm btn-outline-danger"
+                (click)="updateStatus(po.id, 'Cancelled')">
+                Cancel
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Create Modal Overlay -->
+  <div *ngIf="showCreateModal" class="custom-modal-backdrop">
+    <div class="custom-modal-content">
+      <div class="custom-modal-header">
+        <h3 class="mb-0">Create Purchase Order</h3>
+        <button class="btn-close-custom border-0 bg-transparent" (click)="closeModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="custom-modal-body">
+        <form [formGroup]="poForm" (ngSubmit)="onSubmit()">
+          <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+          <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+
+          <div class="form-group">
+            <label class="form-label">Approved Procurement Requisition</label>
+            <select formControlName="procurement_request_id" class="form-select" required>
+              <option [ngValue]="null">Select approved requisition</option>
+              <option *ngFor="let r of approvedRequests" [value]="r.id">{{ r.title }} (Est: ${{ r.estimated_cost | number:'1.2-2' }})</option>
+            </select>
+            <div *ngIf="approvedRequests.length === 0" class="text-warning fs-6 mt-1">
+              No approved procurement requests are currently available. Approve a request first.
+            </div>
+          </div>
+
+          <div class="row mt-2">
+            <div class="col-md-6 form-group">
+              <label class="form-label">Vendor / Supplier</label>
+              <select formControlName="vendor_id" class="form-select" required [attr.disabled]="poForm.get('procurement_request_id')?.value ? true : null">
+                <option [ngValue]="null">Select supplier</option>
+                <option *ngFor="let v of vendors" [value]="v.id">{{ v.name }}</option>
+              </select>
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="form-label">Order Cost ($)</label>
+              <input type="number" formControlName="amount" class="form-control" min="0" required />
+            </div>
+          </div>
+
+          <div class="form-group mt-2">
+            <label class="form-label">Expected Delivery Date</label>
+            <input type="date" formControlName="expected_delivery_date" class="form-control" required />
+          </div>
+
+          <div class="custom-modal-footer d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+            <button type="button" class="btn btn-outline-secondary" (click)="closeModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary-custom" [disabled]="poForm.invalid || submitting">
+              <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+              Create Purchase Order
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,80 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">System Audit Trails</h1>
+      <p class="page-subtitle">Inspect user events, authentication attempts, state changes, and transaction records.</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card p-3 mb-4 border-light shadow-sm filters-card">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <input 
+          type="text" 
+          class="form-control" 
+          placeholder="Filter by Username..." 
+          [(ngModel)]="searchUsername" 
+          (ngModelChange)="loadLogs()"
+        />
+      </div>
+      <div class="col-md-3">
+        <select class="form-select" [(ngModel)]="selectedModule" (ngModelChange)="loadLogs()">
+          <option value="">All Modules</option>
+          <option *ngFor="let mod of modules" [value]="mod">{{ mod }}</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <select class="form-select" [(ngModel)]="selectedAction" (ngModelChange)="loadLogs()">
+          <option value="">All Actions</option>
+          <option *ngFor="let act of actions" [value]="act">{{ act }}</option>
+        </select>
+      </div>
+      <div class="col-md-2 d-grid">
+        <button class="btn btn-outline-secondary" (click)="resetFilters()">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center my-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading trails...</span>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && logs.length === 0" class="card p-5 text-center border-light shadow-sm">
+    <span class="material-icons text-muted fs-1 mb-3">history</span>
+    <h3>No audit logs matching filters</h3>
+    <p class="text-muted">Adjust your filter selections to see logs.</p>
+  </div>
+
+  <!-- Data Table -->
+  <div *ngIf="!loading && logs.length > 0" class="custom-table-container">
+    <table class="custom-table">
+      <thead>
+        <tr>
+          <th>Log ID</th>
+          <th>Username</th>
+          <th>Module</th>
+          <th>Action Type</th>
+          <th>Action Details</th>
+          <th>Origin IP</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let l of logs">
+          <td class="text-nowrap">{{ l.id }}</td>
+          <td class="text-nowrap"><strong>{{ l.username || 'System' }}</strong></td>
+          <td class="text-nowrap"><span class="badge bg-light text-dark fs-6">{{ l.module }}</span></td>
+          <td class="text-nowrap"><span class="fw-bold">{{ l.action }}</span></td>
+          <td class="text-wrap" style="max-width: 350px;">{{ l.details || '-' }}</td>
+          <td class="text-nowrap">{{ l.ip_address || 'Internal' }}</td>
+          <td class="text-nowrap">{{ l.created_at | date:'yyyy-MM-dd HH:mm:ss' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

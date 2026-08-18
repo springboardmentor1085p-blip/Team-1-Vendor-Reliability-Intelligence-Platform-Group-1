@@ -1,0 +1,24 @@
+.unread-bg {
+  background-color: #f0f9ff !important; /* Sky-50 light background */
+}
+
+.notif-icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.notif-icon-box.procurement { background-color: var(--accent-color); }
+.notif-icon-box.delivery { background-color: var(--warning-color); }
+.notif-icon-box.vendor-approval { background-color: var(--primary-color); }
+.notif-icon-box.contract-expiry { background-color: var(--danger-color); }
+.notif-icon-box.compliance { background-color: var(--critical-color); }
+.notif-icon-box.communication { background-color: #6366f1; }
+
+.notif-title {
+  font-size: 14px;
+  color: var(--primary-color);
+}

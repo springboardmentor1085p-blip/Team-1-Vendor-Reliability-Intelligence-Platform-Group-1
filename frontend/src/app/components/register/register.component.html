@@ -1,0 +1,122 @@
+<div class="register-wrapper">
+  <div class="register-card">
+    <div class="register-header">
+      <div class="logo">
+        <span class="material-icons logo-icon">verified_user</span>
+        VendorIQ
+      </div>
+      <h1 class="register-title">Register an account</h1>
+      <p class="register-subtitle">Create a new platform identity or register a vendor profile</p>
+    </div>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+      <div *ngIf="error" class="alert alert-danger" role="alert">
+        {{ error }}
+      </div>
+
+      <div *ngIf="success" class="alert alert-success" role="alert">
+        Account successfully registered! Redirecting to login...
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 form-group">
+          <label for="username" class="form-label">Username</label>
+          <input 
+            type="text" 
+            id="username" 
+            formControlName="username" 
+            class="form-control" 
+            placeholder="e.g. jconnor"
+            [class.is-invalid]="registerForm.get('username')?.touched && registerForm.get('username')?.invalid"
+            required
+          />
+          <div *ngIf="registerForm.get('username')?.touched && registerForm.get('username')?.invalid" class="invalid-feedback d-block">
+            Min 3 characters required.
+          </div>
+        </div>
+
+        <div class="col-md-6 form-group">
+          <label for="email" class="form-label">Email Address</label>
+          <input 
+            type="email" 
+            id="email" 
+            formControlName="email" 
+            class="form-control" 
+            placeholder="e.g. john@company.com"
+            [class.is-invalid]="registerForm.get('email')?.touched && registerForm.get('email')?.invalid"
+            required
+          />
+          <div *ngIf="registerForm.get('email')?.touched && registerForm.get('email')?.invalid" class="invalid-feedback d-block">
+            Valid email is required.
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="full_name" class="form-label">Full Name</label>
+        <input 
+          type="text" 
+          id="full_name" 
+          formControlName="full_name" 
+          class="form-control" 
+          placeholder="e.g. John Connor"
+          [class.is-invalid]="registerForm.get('full_name')?.touched && registerForm.get('full_name')?.invalid"
+          required
+        />
+        <div *ngIf="registerForm.get('full_name')?.touched && registerForm.get('full_name')?.invalid" class="invalid-feedback d-block">
+          Full name is required.
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 form-group">
+          <label for="role" class="form-label">System Role</label>
+          <select id="role" formControlName="role" class="form-select form-control" required>
+            <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
+          </select>
+        </div>
+
+        <div class="col-md-6 form-group">
+          <label for="password" class="form-label">Password</label>
+          <input 
+            type="password" 
+            id="password" 
+            formControlName="password" 
+            class="form-control" 
+            placeholder="Min 6 characters"
+            [class.is-invalid]="registerForm.get('password')?.touched && registerForm.get('password')?.invalid"
+            required
+          />
+          <div *ngIf="registerForm.get('password')?.touched && registerForm.get('password')?.invalid" class="invalid-feedback d-block">
+            Min 6 characters required.
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="registerForm.get('role')?.value === 'Vendor'" class="form-group">
+        <label for="vendor_name" class="form-label">Company Name (Vendor Profile)</label>
+        <input 
+          type="text" 
+          id="vendor_name" 
+          formControlName="vendor_name" 
+          class="form-control" 
+          placeholder="e.g. Apex Industrial Supplies"
+          [class.is-invalid]="registerForm.get('vendor_name')?.touched && registerForm.get('vendor_name')?.invalid"
+          required
+        />
+        <div *ngIf="registerForm.get('vendor_name')?.touched && registerForm.get('vendor_name')?.invalid" class="invalid-feedback d-block">
+          Company name is required for vendor accounts.
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary-custom w-100 btn-register" [disabled]="registerForm.invalid || loading">
+        <span *ngIf="loading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        {{ loading ? 'Creating account...' : 'Register Account' }}
+      </button>
+
+      <div class="login-prompt text-center mt-3">
+        Already have an account? <a routerLink="/login">Sign in</a>
+      </div>
+    </form>
+  </div>
+</div>

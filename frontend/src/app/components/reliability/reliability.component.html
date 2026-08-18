@@ -1,0 +1,69 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Supplier Reliability Leaderboard</h1>
+      <p class="page-subtitle">Ranked view of active suppliers based on delivery timeliness, quality audits, communication logs, and contract compliance.</p>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center my-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading leaderboard...</span>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && rankedVendors.length === 0" class="card p-5 text-center border-light shadow-sm">
+    <span class="material-icons text-muted fs-1 mb-3">military_tech</span>
+    <h3>No active suppliers found</h3>
+    <p class="text-muted">Register and approve suppliers first to display reliability rankings.</p>
+  </div>
+
+  <!-- Leaderboard list -->
+  <div class="row g-4" *ngIf="!loading && rankedVendors.length > 0">
+    <div class="col-md-12">
+      <div class="custom-table-container">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th style="width: 80px;" class="text-center">Rank</th>
+              <th>Supplier Name</th>
+              <th>Category</th>
+              <th>Risk Level</th>
+              <th>Contact Person</th>
+              <th>Email</th>
+              <th class="text-center">Reliability Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let v of rankedVendors; let i = index">
+              <td class="text-center">
+                <span class="rank-number" [ngClass]="{'rank-first': i === 0, 'rank-second': i === 1, 'rank-third': i === 2}">
+                  {{ i + 1 }}
+                </span>
+              </td>
+              <td>
+                <a [routerLink]="['/vendors', v.id]" class="fw-bold text-dark hover-blue">{{ v.name }}</a>
+              </td>
+              <td>{{ v.category }}</td>
+              <td>
+                <span class="badge-status" [ngClass]="v.risk_level.toLowerCase()">
+                  {{ v.risk_level }}
+                </span>
+              </td>
+              <td>{{ v.contact_person || 'N/A' }}</td>
+              <td>{{ v.email || 'N/A' }}</td>
+              <td class="text-center">
+                <div class="score-pill">
+                  <span class="material-icons text-warning" style="font-size: 16px;">stars</span>
+                  <span class="fw-bold text-success" style="font-size: 14px; line-height: 1;">{{ v.reliability_score | number:'1.2-2' }}%</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

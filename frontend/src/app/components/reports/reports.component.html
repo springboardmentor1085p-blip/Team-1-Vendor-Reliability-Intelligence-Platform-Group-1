@@ -1,0 +1,236 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Reports & Exports Portal</h1>
+      <p class="page-subtitle">Examine cumulative audit summaries, view analytical metrics, and download raw CSV tables.</p>
+    </div>
+  </div>
+
+  <!-- Tab Links -->
+  <ul class="nav nav-tabs card-tabs-header mb-4" id="reportsTabs" role="tablist">
+    <li class="nav-item-tab" (click)="changeTab('vendors')">
+      <button class="nav-link-tab" [class.active]="activeTab === 'vendors'">Suppliers Report</button>
+    </li>
+    <li class="nav-item-tab" (click)="changeTab('procurement')">
+      <button class="nav-link-tab" [class.active]="activeTab === 'procurement'">Procurement Requisitions</button>
+    </li>
+    <li class="nav-item-tab" (click)="changeTab('purchase-orders')">
+      <button class="nav-link-tab" [class.active]="activeTab === 'purchase-orders'">Purchase Orders Report</button>
+    </li>
+    <li class="nav-item-tab" (click)="changeTab('contracts')">
+      <button class="nav-link-tab" [class.active]="activeTab === 'contracts'">Contracts & Compliance</button>
+    </li>
+  </ul>
+
+  <!-- Actions & Summary -->
+  <div class="card p-4 border-light shadow-sm mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4 pb-3 border-bottom">
+      <div>
+        <h3 class="mb-1 text-dark uppercase fs-5 fw-bold" *ngIf="activeTab === 'vendors'">Supplier Performance & Risk Summary</h3>
+        <h3 class="mb-1 text-dark uppercase fs-5 fw-bold" *ngIf="activeTab === 'procurement'">Procurement Requisitions History Summary</h3>
+        <h3 class="mb-1 text-dark uppercase fs-5 fw-bold" *ngIf="activeTab === 'purchase-orders'">Purchase Orders Workflow Metrics</h3>
+        <h3 class="mb-1 text-dark uppercase fs-5 fw-bold" *ngIf="activeTab === 'contracts'">Legal Agreements & Certification Status</h3>
+        <p class="text-muted mb-0">Compiled from active database entries.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 px-3 py-2" (click)="downloadReport('csv')" [disabled]="loading || !summaryData">
+          <span class="material-icons fs-5">grid_on</span> CSV
+        </button>
+        <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1 px-3 py-2" (click)="downloadReport('excel')" [disabled]="loading || !summaryData">
+          <span class="material-icons fs-5">table_view</span> Excel
+        </button>
+        <button class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1 px-3 py-2" (click)="downloadReport('pdf')" [disabled]="loading || !summaryData">
+          <span class="material-icons fs-5">picture_as_pdf</span> PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="text-center my-4">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Calculating report summary...</span>
+      </div>
+    </div>
+
+    <!-- Data Summary Renderings -->
+    <div class="row g-4" *ngIf="!loading && summaryData">
+      <!-- 1. Vendors Summary -->
+      <ng-container *ngIf="activeTab === 'vendors'">
+        <div class="col-md-3">
+          <div class="p-3 border rounded-3 text-center bg-light">
+            <div class="text-muted uppercase fs-6 mb-1">Total Suppliers</div>
+            <div class="fs-2 font-weight-bold text-dark">{{ summaryData.total_vendors }}</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="p-3 border rounded-3 text-center bg-light">
+            <div class="text-muted uppercase fs-6 mb-1">Active Suppliers</div>
+            <div class="fs-2 font-weight-bold text-success">{{ summaryData.active_vendors }}</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="p-3 border rounded-3 text-center bg-light">
+            <div class="text-muted uppercase fs-6 mb-1">Avg Reliability</div>
+            <div class="fs-2 font-weight-bold text-primary">{{ summaryData.average_reliability }}%</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="p-3 border rounded-3 text-center bg-light">
+            <div class="text-muted uppercase fs-6 mb-1">High Risk Profiles</div>
+            <div class="fs-2 font-weight-bold text-danger">{{ summaryData.risk_breakdown.HIGH + summaryData.risk_breakdown.CRITICAL }}</div>
+          </div>
+        </div>
+        
+        <div class="col-md-6 mt-4">
+          <h4 class="mb-3 font-weight-bold fs-6">Risk Threat Matrix Allocation</h4>
+          <table class="table custom-table">
+            <thead>
+              <tr>
+                <th>Threat Class</th>
+                <th class="text-center">Count</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge-status low">LOW</span> (80-100 Score)</td>
+                <td class="text-center fw-bold">{{ summaryData.risk_breakdown.LOW }}</td>
+              </tr>
+              <tr>
+                <td><span class="badge-status medium">MEDIUM</span> (60-79 Score)</td>
+                <td class="text-center fw-bold">{{ summaryData.risk_breakdown.MEDIUM }}</td>
+              </tr>
+              <tr>
+                <td><span class="badge-status high">HIGH</span> (40-59 Score)</td>
+                <td class="text-center fw-bold">{{ summaryData.risk_breakdown.HIGH }}</td>
+              </tr>
+              <tr>
+                <td><span class="badge-status critical">CRITICAL</span> (0-39 Score)</td>
+                <td class="text-center fw-bold">{{ summaryData.risk_breakdown.CRITICAL }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+
+      <!-- 2. Procurement Summary -->
+      <ng-container *ngIf="activeTab === 'procurement'">
+        <div class="col-md-4">
+          <div class="p-3 border rounded-3 text-center bg-light">
+            <div class="text-muted uppercase fs-6 mb-1">Total Requisitions</div>
+            <div class="fs-2 font-weight-bold text-dark">{{ summaryData.total_requests }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 border rounded-3 text-center bg-light">
+            <div class="text-muted uppercase fs-6 mb-1">Estimated Value</div>
+            <div class="fs-2 font-weight-bold text-primary">${{ summaryData.total_estimated_value | number:'1.2-2' }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 border rounded-3 text-center bg-light">
+            <div class="text-muted uppercase fs-6 mb-1">Pending Review</div>
+            <div class="fs-2 font-weight-bold text-warning">{{ summaryData.status_distribution.Pending || 0 }}</div>
+          </div>
+        </div>
+
+        <div class="col-md-6 mt-4">
+          <h4 class="mb-3 font-weight-bold fs-6">Requisition Status Counts</h4>
+          <table class="table custom-table">
+            <thead>
+              <tr>
+                <th>Workflow State</th>
+                <th class="text-center">Active Count</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of summaryData.status_list">
+                <td><span class="badge-status" [ngClass]="item.key.toLowerCase()">{{ item.key }}</span></td>
+                <td class="text-center fw-bold">{{ item.value }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+
+      <!-- 3. PO Summary -->
+      <ng-container *ngIf="activeTab === 'purchase-orders'">
+        <div class="col-md-4">
+          <div class="p-3 border rounded-3 text-center bg-light">
+            <div class="text-muted uppercase fs-6 mb-1">Total Orders Issued</div>
+            <div class="fs-2 font-weight-bold text-dark">{{ summaryData.total_pos }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 border rounded-3 text-center bg-light">
+            <div class="text-muted uppercase fs-6 mb-1">Aggregate Order Value</div>
+            <div class="fs-2 font-weight-bold text-primary">${{ summaryData.total_po_value | number:'1.2-2' }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 border rounded-3 text-center bg-light">
+            <div class="text-muted uppercase fs-6 mb-1">Active Deliveries</div>
+            <div class="fs-2 font-weight-bold text-warning">{{ (summaryData.status_distribution.Ordered || 0) + (summaryData.status_distribution.Delivered || 0) }}</div>
+          </div>
+        </div>
+
+        <div class="col-md-6 mt-4">
+          <h4 class="mb-3 font-weight-bold fs-6">Purchase Order Status Aggregates</h4>
+          <table class="table custom-table">
+            <thead>
+              <tr>
+                <th>PO State</th>
+                <th class="text-center">Active Count</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of summaryData.status_list">
+                <td><span class="badge-status" [ngClass]="item.key.toLowerCase().replace(' ', '-')">{{ item.key }}</span></td>
+                <td class="text-center fw-bold">{{ item.value }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+
+      <!-- 4. Contracts Summary -->
+      <ng-container *ngIf="activeTab === 'contracts'">
+        <div class="col-md-4">
+          <div class="p-3 border rounded-3 text-center bg-light">
+            <div class="text-muted uppercase fs-6 mb-1">Total Contracts</div>
+            <div class="fs-2 font-weight-bold text-dark">{{ summaryData.total_contracts }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 border rounded-3 text-center bg-light">
+            <div class="text-muted uppercase fs-6 mb-1">Aggregate Contract Values</div>
+            <div class="fs-2 font-weight-bold text-primary">${{ summaryData.total_contract_value | number:'1.2-2' }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 border rounded-3 text-center bg-light">
+            <div class="text-muted uppercase fs-6 mb-1">Critical Expirations (&lt;30 days)</div>
+            <div class="fs-2 font-weight-bold text-danger">{{ summaryData.status_distribution['Expiring Soon'] || 0 }}</div>
+          </div>
+        </div>
+
+        <div class="col-md-6 mt-4">
+          <h4 class="mb-3 font-weight-bold fs-6">Compliance Class Allocations</h4>
+          <table class="table custom-table">
+            <thead>
+              <tr>
+                <th>Compliance State</th>
+                <th class="text-center">Count</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of summaryData.compliance_list">
+                <td><span class="badge-status" [ngClass]="item.key.toLowerCase().replace(' ', '-')">{{ item.key }}</span></td>
+                <td class="text-center fw-bold">{{ item.value }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>
