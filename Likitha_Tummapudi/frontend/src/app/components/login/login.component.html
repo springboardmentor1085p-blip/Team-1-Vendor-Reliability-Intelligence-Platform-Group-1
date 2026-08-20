@@ -1,0 +1,68 @@
+<div class="login-wrapper">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="logo">
+        <span class="material-icons logo-icon">verified_user</span>
+        VendorIQ
+      </div>
+      <h1 class="login-title">Sign in to your account</h1>
+      <p class="login-subtitle">Vendor Reliability & Procurement Risk Management</p>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <div *ngIf="error" class="alert alert-danger" role="alert">
+        {{ error }}
+      </div>
+
+      <div class="form-group">
+        <label for="username" class="form-label">Username</label>
+        <div class="input-icon-wrapper">
+          <span class="material-icons input-icon">person</span>
+          <input 
+            type="text" 
+            id="username" 
+            formControlName="username" 
+            class="form-control" 
+            placeholder="Enter username" 
+            [class.is-invalid]="loginForm.get('username')?.touched && loginForm.get('username')?.invalid"
+            required
+          />
+        </div>
+        <div *ngIf="loginForm.get('username')?.touched && loginForm.get('username')?.invalid" class="invalid-feedback d-block">
+          Username is required.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password" class="form-label">Password</label>
+        <div class="input-icon-wrapper">
+          <span class="material-icons input-icon">lock</span>
+          <input 
+            type="password" 
+            id="password" 
+            formControlName="password" 
+            class="form-control" 
+            placeholder="Enter password"
+            [class.is-invalid]="loginForm.get('password')?.touched && loginForm.get('password')?.invalid" 
+            required
+          />
+        </div>
+        <div *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.invalid" class="invalid-feedback d-block">
+          Password is required.
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary-custom w-100 btn-login" [disabled]="loginForm.invalid || loading">
+        <span *ngIf="loading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        {{ loading ? 'Signing in...' : 'Sign In' }}
+      </button>
+
+      <div class="register-prompt text-center mt-3">
+        Don't have an account? <a routerLink="/register">Register vendor profile</a>
+      </div>
+      <div class="register-prompt text-center mt-2">
+        <a routerLink="/forgot-password">Forgot Password?</a>
+      </div>
+    </form>
+  </div>
+</div>
