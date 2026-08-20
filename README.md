@@ -1,4 +1,7 @@
 # VendorIQ — Vendor Reliability Intelligence & Procurement Risk Management Platform
+## 🚀 Live Deployment
+
+[Visit VendorIQ](https://vendoriq-rho.vercel.app/)
 
 VendorIQ is an enterprise-grade vendor reliability intelligence and procurement risk management system. This application supports vendor registration directory auditing, automated procurement workflows (requisitions to invoice settlement), transparent weighted reliability score calculation, legal contract expiration warning triggers, and analytical dashboard panels.
 
