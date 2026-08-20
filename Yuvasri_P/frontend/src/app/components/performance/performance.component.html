@@ -1,0 +1,62 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Performance Logs</h1>
+      <p class="page-subtitle">View and audit detailed quality, communication, compliance, and delivery scores logged for suppliers.</p>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center my-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && logs.length === 0" class="card p-5 text-center border-light shadow-sm">
+    <span class="material-icons text-muted fs-1 mb-3">equalizer</span>
+    <h3>No performance logs found</h3>
+    <p class="text-muted">No evaluations have been logged for deliveries yet.</p>
+  </div>
+
+  <!-- Data Table -->
+  <div *ngIf="!loading && logs.length > 0" class="custom-table-container">
+    <table class="custom-table">
+      <thead>
+        <tr>
+          <th>Supplier Name</th>
+          <th>Logged Date</th>
+          <th>Delivery Timeliness</th>
+          <th>Delay Days</th>
+          <th>Quality Rating</th>
+          <th>Comm. Rating</th>
+          <th>Compliance</th>
+          <th>Resolution</th>
+          <th>Auditor</th>
+          <th>Comments</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of logs">
+          <td>
+            <a [routerLink]="['/vendors', p.vendor_id]" class="fw-bold text-dark hover-blue">{{ p.vendor?.name || 'Loading...' }}</a>
+          </td>
+          <td class="text-nowrap">{{ p.created_at | date:'yyyy-MM-dd' }}</td>
+          <td class="text-nowrap">
+            <span class="badge-status" [ngClass]="p.delivery_on_time ? 'active' : 'rejected'">
+              {{ p.delivery_on_time ? 'On-Time' : 'Delayed' }}
+            </span>
+          </td>
+          <td class="text-nowrap">{{ p.delivery_delay_days }} days</td>
+          <td class="text-nowrap"><strong>{{ p.quality_rating }}%</strong></td>
+          <td class="text-nowrap">{{ p.communication_rating }}%</td>
+          <td class="text-nowrap">{{ p.compliance_rating }}%</td>
+          <td class="text-nowrap">{{ p.issue_resolution_rating }}%</td>
+          <td class="text-nowrap">{{ p.logged_by?.full_name || 'System' }}</td>
+          <td class="text-wrap" style="max-width: 250px;">{{ p.comments || '-' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
