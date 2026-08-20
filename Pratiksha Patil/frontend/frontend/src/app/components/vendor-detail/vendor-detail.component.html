@@ -1,0 +1,528 @@
+<div class="page-container" *ngIf="vendor">
+  <!-- Back navigation & Page Header -->
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <a routerLink="/vendors" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center py-1" *ngIf="authService.getRole() !== 'Vendor'">
+      <span class="material-icons fs-6 me-1">arrow_back</span> Back to Directory
+    </a>
+  </div>
+
+  <div class="vendor-header card p-4 mb-4 border-light shadow-sm">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="vendor-avatar">
+          <span class="material-icons fs-1 text-primary">business</span>
+        </div>
+        <div>
+          <h1 class="vendor-title mb-1">{{ vendor.name }}</h1>
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="badge-category">{{ vendor.category }}</span>
+            <span class="badge-status" [ngClass]="vendor.status.toLowerCase().replace(' ', '-')">{{ vendor.status }}</span>
+            <span class="badge-status" [ngClass]="vendor.risk_level.toLowerCase()">{{ vendor.risk_level }} Risk</span>
+          </div>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-3 bg-light p-3 rounded-3 border">
+        <div class="text-center px-2">
+          <div class="fs-6 text-muted font-weight-bold uppercase mb-1">Reliability Score</div>
+          <div class="fs-2 font-weight-bold text-success d-flex align-items-center justify-content-center gap-1">
+            <span class="material-icons text-warning fs-3">stars</span>
+            {{ vendor.reliability_score }}%
+          </div>
+        </div>
+        <div class="border-start ps-3 text-center" *ngIf="authService.getRole() !== 'Vendor'">
+          <button class="btn btn-sm btn-accent-custom d-flex align-items-center gap-1" (click)="recalculateReliability()">
+            <span class="material-icons fs-6">sync</span> Recalculate
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Links -->
+  <ul class="nav nav-tabs card-tabs-header mb-4" id="vendorTabs" role="tablist">
+    <li class="nav-item-tab" (click)="changeTab('profile')">
+      <button class="nav-link-tab" [class.active]="activeTab === 'profile'">Profile Info</button>
+    </li>
+    <li class="nav-item-tab" (click)="changeTab('performance')" *ngIf="authService.getRole() !== 'Vendor' || authService.currentUserValue.vendor_id === vendorId">
+      <button class="nav-link-tab" [class.active]="activeTab === 'performance'">Performance Logs ({{ performances.length }})</button>
+    </li>
+    <li class="nav-item-tab" (click)="changeTab('reliability')" *ngIf="authService.getRole() !== 'Vendor' || authService.currentUserValue.vendor_id === vendorId">
+      <button class="nav-link-tab" [class.active]="activeTab === 'reliability'">Risk & Score Breakdown</button>
+    </li>
+    <li class="nav-item-tab" (click)="changeTab('contracts')" *ngIf="authService.getRole() !== 'Vendor' || authService.currentUserValue.vendor_id === vendorId">
+      <button class="nav-link-tab" [class.active]="activeTab === 'contracts'">Contracts ({{ contracts.length }})</button>
+    </li>
+    <li class="nav-item-tab" (click)="changeTab('communication')">
+      <button class="nav-link-tab" [class.active]="activeTab === 'communication'">Communications ({{ messages.length }})</button>
+    </li>
+  </ul>
+
+  <!-- Tab Panels -->
+  <div class="tab-content" id="vendorTabsContent">
+    <!-- 1. Profile Panel -->
+    <div class="tab-pane fade show active" *ngIf="activeTab === 'profile'">
+      <div class="row g-4">
+        <div class="col-md-8">
+          <div class="card p-4 h-100 border-light shadow-sm">
+            <h3 class="card-section-title mb-4">Corporate Profile Details</h3>
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <div class="info-label text-muted fs-6 uppercase">Company Name</div>
+                <div class="info-value fs-5 font-weight-bold">{{ vendor.name }}</div>
+              </div>
+              <div class="col-sm-6">
+                <div class="info-label text-muted fs-6 uppercase">Corporate Category</div>
+                <div class="info-value fs-5">{{ vendor.category }}</div>
+              </div>
+              <div class="col-sm-6">
+                <div class="info-label text-muted fs-6 uppercase">Primary Contact</div>
+                <div class="info-value fs-5">{{ vendor.contact_person || 'N/A' }}</div>
+              </div>
+              <div class="col-sm-6">
+                <div class="info-label text-muted fs-6 uppercase">Contact Phone</div>
+                <div class="info-value fs-5">{{ vendor.phone || 'N/A' }}</div>
+              </div>
+              <div class="col-sm-12">
+                <div class="info-label text-muted fs-6 uppercase">Email Address</div>
+                <div class="info-value fs-5">{{ vendor.email || 'N/A' }}</div>
+              </div>
+              <div class="col-sm-12">
+                <div class="info-label text-muted fs-6 uppercase">Headquarters Address</div>
+                <div class="info-value fs-5">{{ vendor.address || 'N/A' }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="card p-4 h-100 border-light shadow-sm text-center">
+            <h3 class="card-section-title text-start mb-3">Risk Assessment</h3>
+            <div class="risk-meter-container my-4">
+              <div class="risk-badge-large" [ngClass]="vendor.risk_level.toLowerCase()">
+                {{ vendor.risk_level }}
+              </div>
+            </div>
+            <p class="text-muted text-start mt-2">
+              Based on active scoring weights, this supplier holds a <strong>{{ vendor.risk_level }}</strong> threat status. 
+              Always review active warnings before assigning high-value orders.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Performance Panel -->
+    <div class="tab-pane fade show active" *ngIf="activeTab === 'performance'">
+      <div class="card p-4 border-light shadow-sm">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3 class="card-section-title mb-0">Supplier Performance Logs</h3>
+          <button 
+            *ngIf="authService.hasRole(['Administrator', 'Supply Chain Manager', 'Procurement Manager'])" 
+            class="btn btn-sm btn-primary-custom d-flex align-items-center gap-1" 
+            (click)="openPerfModal()">
+            <span class="material-icons fs-6">add</span> Log Performance
+          </button>
+        </div>
+
+        <div *ngIf="performances.length === 0" class="text-center py-5">
+          <span class="material-icons text-muted fs-2 mb-2">assessment</span>
+          <p class="text-muted">No performance logs recorded for this supplier.</p>
+        </div>
+
+        <div class="table-responsive" *ngIf="performances.length > 0">
+          <table class="table custom-table">
+            <thead>
+              <tr>
+                <th>Logged Date</th>
+                <th>Delivery On-Time</th>
+                <th>Delay Days</th>
+                <th>Quality Rating</th>
+                <th>Comm. Rating</th>
+                <th>Compliance</th>
+                <th>Resolution</th>
+                <th>Logged By</th>
+                <th>Comments</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of performances">
+                <td>{{ p.created_at | date:'yyyy-MM-dd' }}</td>
+                <td>
+                  <span class="badge-status" [ngClass]="p.delivery_on_time ? 'active' : 'rejected'">
+                    {{ p.delivery_on_time ? 'Yes' : 'No' }}
+                  </span>
+                </td>
+                <td>{{ p.delivery_delay_days }} days</td>
+                <td><strong>{{ p.quality_rating }}%</strong></td>
+                <td>{{ p.communication_rating }}%</td>
+                <td>{{ p.compliance_rating }}%</td>
+                <td>{{ p.issue_resolution_rating }}%</td>
+                <td>{{ p.logged_by?.username || 'System' }}</td>
+                <td class="text-wrap max-width-comments">{{ p.comments || '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Reliability Detail Panel -->
+    <div class="tab-pane fade show active" *ngIf="activeTab === 'reliability'">
+      <div class="card p-4 border-light shadow-sm" *ngIf="reliabilityHistory.length > 0">
+        <div class="row g-4">
+          <div class="col-md-6">
+            <h3 class="card-section-title mb-4">Dynamic Score Breakdown</h3>
+            <!-- Breakdown Items -->
+            <div class="score-breakdown-item mb-3">
+              <div class="d-flex justify-content-between mb-1">
+                <span>Delivery Timeliness (25%)</span>
+                <span class="font-weight-bold">{{ reliabilityHistory[0].delivery_score }}%</span>
+              </div>
+              <div class="progress" style="height: 8px;">
+                <div class="progress-bar bg-success" role="progressbar" [style.width.%]="reliabilityHistory[0].delivery_score"></div>
+              </div>
+            </div>
+
+            <div class="score-breakdown-item mb-3">
+              <div class="d-flex justify-content-between mb-1">
+                <span>Quality Compliance (20%)</span>
+                <span class="font-weight-bold">{{ reliabilityHistory[0].quality_score }}%</span>
+              </div>
+              <div class="progress" style="height: 8px;">
+                <div class="progress-bar bg-info" role="progressbar" [style.width.%]="reliabilityHistory[0].quality_score"></div>
+              </div>
+            </div>
+
+            <div class="score-breakdown-item mb-3">
+              <div class="d-flex justify-content-between mb-1">
+                <span>Communication Response (15%)</span>
+                <span class="font-weight-bold">{{ reliabilityHistory[0].communication_score }}%</span>
+              </div>
+              <div class="progress" style="height: 8px;">
+                <div class="progress-bar bg-primary" role="progressbar" [style.width.%]="reliabilityHistory[0].communication_score"></div>
+              </div>
+            </div>
+
+            <div class="score-breakdown-item mb-3">
+              <div class="d-flex justify-content-between mb-1">
+                <span>Contract Compliance (15%)</span>
+                <span class="font-weight-bold">{{ reliabilityHistory[0].compliance_score }}%</span>
+              </div>
+              <div class="progress" style="height: 8px;">
+                <div class="progress-bar bg-warning" role="progressbar" [style.width.%]="reliabilityHistory[0].compliance_score"></div>
+              </div>
+            </div>
+
+            <div class="score-breakdown-item mb-3">
+              <div class="d-flex justify-content-between mb-1">
+                <span>Purchase Volume History (10%)</span>
+                <span class="font-weight-bold">{{ reliabilityHistory[0].history_score }}%</span>
+              </div>
+              <div class="progress" style="height: 8px;">
+                <div class="progress-bar bg-secondary" role="progressbar" [style.width.%]="reliabilityHistory[0].history_score"></div>
+              </div>
+            </div>
+
+            <div class="score-breakdown-item mb-3">
+              <div class="d-flex justify-content-between mb-1">
+                <span>Issue Resolution Performance (15%)</span>
+                <span class="font-weight-bold">{{ reliabilityHistory[0].issue_resolution_score }}%</span>
+              </div>
+              <div class="progress" style="height: 8px;">
+                <div class="progress-bar bg-danger" role="progressbar" [style.width.%]="reliabilityHistory[0].issue_resolution_score"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="bg-light p-4 rounded-3 border h-100">
+              <h3 class="card-section-title mb-3">Platform Recommendations</h3>
+              <p class="mb-4">
+                Our intelligence engine evaluates calculated weights to output actionable recommendations.
+              </p>
+              
+              <div class="recommendation-box bg-white p-3 rounded-2 border border-info border-start-5 mb-3" 
+                   *ngFor="let rec of reliabilityHistory[0].recommendations.split(';')">
+                <div class="d-flex align-items-start gap-2">
+                  <span class="material-icons text-info fs-5 mt-1">info</span>
+                  <div class="fw-bold">{{ rec }}</div>
+                </div>
+              </div>
+
+              <div class="text-muted fs-6 mt-4">
+                Last calculated on: {{ reliabilityHistory[0].calculated_at | date:'yyyy-MM-dd HH:mm' }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="reliabilityHistory.length === 0" class="card p-5 text-center border-light shadow-sm">
+        <span class="material-icons text-muted fs-1 mb-2">query_stats</span>
+        <p class="text-muted">No reliability evaluation logs generated yet. Click 'Recalculate' in the header to initialize.</p>
+      </div>
+    </div>
+
+    <!-- 4. Contracts Panel -->
+    <div class="tab-pane fade show active" *ngIf="activeTab === 'contracts'">
+      <div class="card p-4 border-light shadow-sm">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3 class="card-section-title mb-0">Legal Contracts & Compliance</h3>
+          <button 
+            *ngIf="authService.hasRole(['Administrator', 'Supply Chain Manager', 'Procurement Manager'])" 
+            class="btn btn-sm btn-primary-custom d-flex align-items-center gap-1" 
+            (click)="openContractModal()">
+            <span class="material-icons fs-6">add</span> Create Contract
+          </button>
+        </div>
+
+        <div *ngIf="contracts.length === 0" class="text-center py-5">
+          <span class="material-icons text-muted fs-2 mb-2">description</span>
+          <p class="text-muted">No active contracts found for this vendor.</p>
+        </div>
+
+        <div class="table-responsive" *ngIf="contracts.length > 0">
+          <table class="table custom-table">
+            <thead>
+              <tr>
+                <th>Contract Number</th>
+                <th>Agreement Title</th>
+                <th>Contract Value</th>
+                <th>Start Date</th>
+                <th>Expiry Date</th>
+                <th>Compliance Status</th>
+                <th>Status</th>
+                <th>Certifications</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let c of contracts">
+                <td><strong>{{ c.contract_number }}</strong></td>
+                <td>{{ c.title }}</td>
+                <td>${{ c.value | number:'1.2-2' }}</td>
+                <td>{{ c.start_date | date:'yyyy-MM-dd' }}</td>
+                <td>{{ c.expiry_date | date:'yyyy-MM-dd' }}</td>
+                <td>
+                  <span class="badge-status" [ngClass]="c.compliance_status.toLowerCase().replace(' ', '-')">
+                    {{ c.compliance_status }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge-status" [ngClass]="c.status.toLowerCase().replace(' ', '-')">
+                    {{ c.status }}
+                  </span>
+                </td>
+                <td>{{ c.certification_details || '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Communications Panel -->
+    <div class="tab-pane fade show active" *ngIf="activeTab === 'communication'">
+      <div class="card p-4 border-light shadow-sm">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3 class="card-section-title mb-0">Supplier Communication Logs</h3>
+          <button class="btn btn-sm btn-primary-custom d-flex align-items-center gap-1" (click)="openMsgModal()">
+            <span class="material-icons fs-6">send</span> Send Message
+          </button>
+        </div>
+
+        <div *ngIf="messages.length === 0" class="text-center py-5">
+          <span class="material-icons text-muted fs-2 mb-2">forum</span>
+          <p class="text-muted">No messages in history. Start a conversation above.</p>
+        </div>
+
+        <div class="message-thread" *ngIf="messages.length > 0">
+          <div class="message-card p-3 border rounded-3 mb-3" *ngFor="let m of messages">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+              <div class="d-flex align-items-center gap-2">
+                <span class="material-icons text-primary fs-5">account_circle</span>
+                <span class="fw-bold">{{ m.sender.full_name }}</span>
+                <span class="badge bg-light text-dark fs-6">{{ m.sender.role }}</span>
+              </div>
+              <div class="text-muted fs-6">
+                {{ m.created_at | date:'yyyy-MM-dd HH:mm' }}
+              </div>
+            </div>
+            <div class="fw-bold mb-2">Subject: {{ m.subject }}</div>
+            <p class="mb-0 text-wrap">{{ m.message }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALS -->
+
+  <!-- Modal A: Performance Log -->
+  <div *ngIf="showPerfModal" class="custom-modal-backdrop">
+    <div class="custom-modal-content">
+      <div class="custom-modal-header">
+        <h3 class="mb-0">Log Performance Review</h3>
+        <button class="btn-close-custom border-0 bg-transparent" (click)="showPerfModal = false">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="custom-modal-body">
+        <form [formGroup]="perfForm" (ngSubmit)="submitPerformance()">
+          <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+          <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+
+          <div class="row g-3">
+            <div class="col-6 form-group">
+              <label class="form-label">On-Time Delivery</label>
+              <select formControlName="delivery_on_time" class="form-select" required>
+                <option [ngValue]="true">Yes</option>
+                <option [ngValue]="false">No</option>
+              </select>
+            </div>
+            <div class="col-6 form-group">
+              <label class="form-label">Delay Days</label>
+              <input type="number" formControlName="delivery_delay_days" class="form-control" min="0" required />
+            </div>
+          </div>
+
+          <div class="row g-3 mt-1">
+            <div class="col-6 form-group">
+              <label class="form-label">Quality Rating (0-100)</label>
+              <input type="number" formControlName="quality_rating" class="form-control" min="0" max="100" required />
+            </div>
+            <div class="col-6 form-group">
+              <label class="form-label">Communication Rating (0-100)</label>
+              <input type="number" formControlName="communication_rating" class="form-control" min="0" max="100" required />
+            </div>
+          </div>
+
+          <div class="row g-3 mt-1">
+            <div class="col-6 form-group">
+              <label class="form-label">Compliance (0-100)</label>
+              <input type="number" formControlName="compliance_rating" class="form-control" min="0" max="100" required />
+            </div>
+            <div class="col-6 form-group">
+              <label class="form-label">Issue Resolution (0-100)</label>
+              <input type="number" formControlName="issue_resolution_rating" class="form-control" min="0" max="100" required />
+            </div>
+          </div>
+
+          <div class="form-group mt-3">
+            <label class="form-label">Comments / Revisions</label>
+            <textarea formControlName="comments" class="form-control" rows="2" placeholder="e.g. Parts arrived in good packaging..."></textarea>
+          </div>
+
+          <div class="custom-modal-footer d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+            <button type="button" class="btn btn-outline-secondary" (click)="showPerfModal = false">Cancel</button>
+            <button type="submit" class="btn btn-primary-custom" [disabled]="perfForm.invalid || submitting">
+              <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+              Log Review
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal B: Create Contract -->
+  <div *ngIf="showContractModal" class="custom-modal-backdrop">
+    <div class="custom-modal-content">
+      <div class="custom-modal-header">
+        <h3 class="mb-0">Create Contract Agreement</h3>
+        <button class="btn-close-custom border-0 bg-transparent" (click)="showContractModal = false">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="custom-modal-body">
+        <form [formGroup]="contractForm" (ngSubmit)="submitContract()">
+          <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+          <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+
+          <div class="row g-3">
+            <div class="col-6 form-group">
+              <label class="form-label">Contract Number</label>
+              <input type="text" formControlName="contract_number" class="form-control" placeholder="e.g. CON-2026-X11" required />
+            </div>
+            <div class="col-6 form-group">
+              <label class="form-label">Agreement Value ($)</label>
+              <input type="number" formControlName="value" class="form-control" min="0" required />
+            </div>
+          </div>
+
+          <div class="form-group mt-2">
+            <label class="form-label">Contract Title</label>
+            <input type="text" formControlName="title" class="form-control" placeholder="e.g. Core Machinery Maintenance Service" required />
+          </div>
+
+          <div class="row g-3 mt-1">
+            <div class="col-6 form-group">
+              <label class="form-label">Start Date</label>
+              <input type="date" formControlName="start_date" class="form-control" required />
+            </div>
+            <div class="col-6 form-group">
+              <label class="form-label">Expiry Date</label>
+              <input type="date" formControlName="expiry_date" class="form-control" required />
+            </div>
+          </div>
+
+          <div class="form-group mt-2">
+            <label class="form-label">Compliance Status</label>
+            <select formControlName="compliance_status" class="form-select" required>
+              <option value="Compliant">Compliant</option>
+              <option value="Non-Compliant">Non-Compliant</option>
+              <option value="Under Review">Under Review</option>
+            </select>
+          </div>
+
+          <div class="form-group mt-2">
+            <label class="form-label">Certification Details</label>
+            <input type="text" formControlName="certification_details" class="form-control" placeholder="e.g. ISO 9001, OHSAS 18001" />
+          </div>
+
+          <div class="custom-modal-footer d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+            <button type="button" class="btn btn-outline-secondary" (click)="showContractModal = false">Cancel</button>
+            <button type="submit" class="btn btn-primary-custom" [disabled]="contractForm.invalid || submitting">
+              <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+              Create Contract
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal C: Compose Message -->
+  <div *ngIf="showMsgModal" class="custom-modal-backdrop">
+    <div class="custom-modal-content">
+      <div class="custom-modal-header">
+        <h3 class="mb-0">Compose Message</h3>
+        <button class="btn-close-custom border-0 bg-transparent" (click)="showMsgModal = false">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="custom-modal-body">
+        <form [formGroup]="msgForm" (ngSubmit)="submitMessage()">
+          <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+          <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+
+          <div class="form-group">
+            <label class="form-label">Subject</label>
+            <input type="text" formControlName="subject" class="form-control" placeholder="e.g. Invoicing discrepancy PO-102" required />
+          </div>
+
+          <div class="form-group mt-3">
+            <label class="form-label">Message Text</label>
+            <textarea formControlName="message" class="form-control" rows="4" placeholder="Draft your message details here..." required></textarea>
+          </div>
+
+          <div class="custom-modal-footer d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+            <button type="button" class="btn btn-outline-secondary" (click)="showMsgModal = false">Cancel</button>
+            <button type="submit" class="btn btn-primary-custom" [disabled]="msgForm.invalid || submitting">
+              <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+              Send Message
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

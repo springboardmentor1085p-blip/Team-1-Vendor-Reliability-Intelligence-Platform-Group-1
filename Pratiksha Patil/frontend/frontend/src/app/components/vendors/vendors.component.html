@@ -1,0 +1,200 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Vendor Directory</h1>
+      <p class="page-subtitle">Manage supplier profiles, contact details, registration states, and risk categories.</p>
+    </div>
+    <div *ngIf="hasAccess(['Administrator', 'Supply Chain Manager', 'Procurement Manager'])">
+      <button class="btn btn-primary-custom d-flex align-items-center gap-2 px-3 py-2" (click)="openModal()">
+        <span class="material-icons">add</span>
+        Add Supplier
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters Panel -->
+  <div class="filters-card card p-3 mb-4 border-light shadow-sm">
+    <div class="row g-3">
+      <div class="col-md-5">
+        <div class="input-group">
+          <span class="input-group-text bg-transparent border-end-0 text-muted"><span class="material-icons fs-5">search</span></span>
+          <input 
+            type="text" 
+            class="form-control border-start-0 ps-1" 
+            placeholder="Search by vendor name or contact..." 
+            [(ngModel)]="searchQuery" 
+            (ngModelChange)="applyFilters()"
+          />
+        </div>
+      </div>
+      <div class="col-md-3">
+        <select class="form-select" [(ngModel)]="selectedCategory" (ngModelChange)="applyFilters()">
+          <option value="">All Categories</option>
+          <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <select class="form-select" [(ngModel)]="selectedStatus" (ngModelChange)="applyFilters()">
+          <option value="">All Statuses</option>
+          <option *ngFor="let st of statuses" [value]="st">{{ st }}</option>
+        </select>
+      </div>
+      <div class="col-md-1 d-grid">
+        <button class="btn btn-outline-secondary" (click)="searchQuery = ''; selectedCategory = ''; selectedStatus = ''; applyFilters()">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center my-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && filteredVendors.length === 0" class="card p-5 text-center border-light shadow-sm">
+    <span class="material-icons text-muted fs-1 mb-3">business</span>
+    <h3>No vendors found</h3>
+    <p class="text-muted">No suppliers match your search filters. Adjust filters or register a new one.</p>
+  </div>
+
+  <!-- Data Table -->
+  <div *ngIf="!loading && filteredVendors.length > 0" class="custom-table-container">
+    <table class="custom-table">
+      <thead>
+        <tr>
+          <th>Supplier Name</th>
+          <th>Category</th>
+          <th>Contact Person</th>
+          <th>Email Address</th>
+          <th>Reliability Score</th>
+          <th>Risk Level</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let v of filteredVendors">
+          <td>
+            <a [routerLink]="['/vendors', v.id]" class="fw-bold text-dark hover-blue">{{ v.name }}</a>
+          </td>
+          <td>{{ v.category }}</td>
+          <td>{{ v.contact_person || 'N/A' }}</td>
+          <td>{{ v.email || 'N/A' }}</td>
+          <td class="text-nowrap">
+            <div class="d-flex align-items-center gap-1">
+              <span class="material-icons text-warning fs-5">stars</span>
+              <span class="fw-bold">{{ v.reliability_score }}%</span>
+            </div>
+          </td>
+          <td class="text-nowrap">
+            <span class="badge-status" [ngClass]="v.risk_level.toLowerCase()">
+              {{ v.risk_level }}
+            </span>
+          </td>
+          <td class="text-nowrap">
+            <span class="badge-status" [ngClass]="v.status.toLowerCase().replace(' ', '-')">
+              {{ v.status }}
+            </span>
+          </td>
+          <td class="text-end text-nowrap">
+            <div class="d-flex justify-content-end gap-2">
+              <a [routerLink]="['/vendors', v.id]" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center">
+                <span class="material-icons fs-6 me-1">visibility</span> View
+              </a>
+
+              <!-- Approval operations for SCM or Admin -->
+              <ng-container *ngIf="hasAccess(['Administrator', 'Supply Chain Manager'])">
+                <button 
+                  *ngIf="v.status === 'Pending Approval'" 
+                  class="btn btn-sm btn-success"
+                  (click)="updateStatus(v.id, 'Active')">
+                  Approve
+                </button>
+                <button 
+                  *ngIf="v.status === 'Pending Approval'" 
+                  class="btn btn-sm btn-danger"
+                  (click)="updateStatus(v.id, 'Rejected')">
+                  Reject
+                </button>
+                <button 
+                  *ngIf="v.status === 'Active'" 
+                  class="btn btn-sm btn-outline-danger"
+                  (click)="updateStatus(v.id, 'Inactive')">
+                  Deactivate
+                </button>
+                <button 
+                  *ngIf="v.status === 'Inactive'" 
+                  class="btn btn-sm btn-outline-success"
+                  (click)="updateStatus(v.id, 'Active')">
+                  Activate
+                </button>
+              </ng-container>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Create Modal Overlay -->
+  <div *ngIf="showCreateModal" class="custom-modal-backdrop">
+    <div class="custom-modal-content">
+      <div class="custom-modal-header">
+        <h3 class="mb-0">Add Supplier Profile</h3>
+        <button class="btn-close-custom border-0 bg-transparent" (click)="closeModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="custom-modal-body">
+        <form [formGroup]="vendorForm" (ngSubmit)="onSubmit()">
+          <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+          <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+
+          <div class="form-group">
+            <label class="form-label">Vendor/Supplier Name</label>
+            <input type="text" formControlName="name" class="form-control" placeholder="e.g. Acer Logistics Inc." required />
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="form-label">Category</label>
+              <select formControlName="category" class="form-select" required>
+                <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+              </select>
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="form-label">Contact Person</label>
+              <input type="text" formControlName="contact_person" class="form-control" placeholder="e.g. John Doe" required />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="form-label">Email</label>
+              <input type="email" formControlName="email" class="form-control" placeholder="e.g. supplier@company.com" required />
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="form-label">Phone</label>
+              <input type="text" formControlName="phone" class="form-control" placeholder="e.g. 555-0199" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Corporate Address</label>
+            <textarea formControlName="address" class="form-control" rows="2" placeholder="e.g. 100 Main St, Chicago, IL"></textarea>
+          </div>
+
+          <div class="custom-modal-footer d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+            <button type="button" class="btn btn-outline-secondary" (click)="closeModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary-custom" [disabled]="vendorForm.invalid || submitting">
+              <span *ngIf="submitting" class="spinner-border spinner-border-sm me-1"></span>
+              Register Supplier
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
